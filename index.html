@@ -52,10 +52,45 @@ nav a.on{color:var(--jaune)}
 .wa{position:fixed;right:16px;bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px) + 16px);z-index:7;width:56px;height:56px;border-radius:50%;background:#25d366;display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.5)}
 .wa svg{width:30px;height:30px;fill:#fff}
 .note{background:var(--gris);border-left:4px solid var(--jaune);padding:10px 12px;border-radius:4px;margin:8px 0;font-size:14px}
+
+nav,.wa{display:none}
+body.auth nav{display:flex}
+body.auth .wa{display:grid}
+#welcome{display:none;max-width:760px;margin:0 auto;padding:0 16px 24px}
+body:not(.auth) #welcome{display:block}
+body:not(.auth) .page{display:none}
+body:not(.auth){padding-bottom:24px}
+#welcome .hero{padding-top:28px}
+.lead{color:#cfcfc8;margin-bottom:6px}
 </style>
 </head>
 <body>
 <div class="top">BAYE DIOP <span>BÂTIMENT</span></div>
+
+<section id="welcome">
+  <div class="hero">
+    <h1>Bâtir <em>solide</em><br>au Sénégal</h1>
+    <p>Connectez-vous ou créez un compte pour voir nos bâtiments et nos ouvriers.</p>
+  </div>
+  <div class="tape"></div>
+    <div class="tabs">
+      <button class="btn" id="tLogin">Connexion</button>
+      <button class="btn alt" id="tReg">Inscription</button>
+    </div>
+    <form id="fLogin" novalidate>
+      <label for="le">Email</label><input id="le" type="email" autocomplete="email" required>
+      <label for="lp">Mot de passe</label><input id="lp" type="password" autocomplete="current-password" required>
+      <button class="btn" style="margin-top:16px;width:100%">Se connecter</button>
+    </form>
+    <form id="fReg" novalidate hidden>
+      <label for="rn">Nom complet</label><input id="rn" autocomplete="name" required>
+      <label for="rw">Numéro WhatsApp</label><input id="rw" type="tel" placeholder="+221 7X XXX XX XX" autocomplete="tel" required>
+      <label for="re">Email</label><input id="re" type="email" autocomplete="email" required>
+      <label for="rp">Mot de passe (8 caractères minimum)</label><input id="rp" type="password" autocomplete="new-password" minlength="8" required>
+      <button class="btn" style="margin-top:16px;width:100%">Créer mon compte</button>
+    </form>
+    <p class="msg" id="msg" role="status"></p>
+</section>
 
 <main>
 <section class="page on" id="accueil">
@@ -86,26 +121,7 @@ nav a.on{color:var(--jaune)}
 
 <section class="page" id="compte">
   <h2>Mon compte</h2>
-  <div id="guest">
-    <div class="tabs">
-      <button class="btn" id="tLogin">Connexion</button>
-      <button class="btn alt" id="tReg">Inscription</button>
-    </div>
-    <form id="fLogin" novalidate>
-      <label for="le">Email</label><input id="le" type="email" autocomplete="email" required>
-      <label for="lp">Mot de passe</label><input id="lp" type="password" autocomplete="current-password" required>
-      <button class="btn" style="margin-top:16px;width:100%">Se connecter</button>
-    </form>
-    <form id="fReg" novalidate hidden>
-      <label for="rn">Nom complet</label><input id="rn" autocomplete="name" required>
-      <label for="rw">Numéro WhatsApp</label><input id="rw" type="tel" placeholder="+221 7X XXX XX XX" autocomplete="tel" required>
-      <label for="re">Email</label><input id="re" type="email" autocomplete="email" required>
-      <label for="rp">Mot de passe (8 caractères minimum)</label><input id="rp" type="password" autocomplete="new-password" minlength="8" required>
-      <button class="btn" style="margin-top:16px;width:100%">Créer mon compte</button>
-    </form>
-    <p class="msg" id="msg" role="status"></p>
-  </div>
-  <div id="user" hidden>
+  <div id="user">
     <div class="card"><div class="in">
       <h3 id="uName"></h3><p class="muted" id="uInfo"></p>
       <button class="btn alt" id="out" style="margin-top:14px">Se déconnecter</button>
@@ -127,8 +143,8 @@ nav a.on{color:var(--jaune)}
 
 <script>
 // ====== RÉGLAGES ======
-// Vercel est en HTTPS : l'API Katabump doit aussi être en HTTPS (domaine ou proxy).
-const API = 'http://51.68.234.157:20261';
+// Les appels passent par Vercel (voir vercel.json) vers le serveur Katabump.
+const API = '';
 const WA_NUM = '221762056941';
 
 const $ = s => document.querySelector(s);
@@ -173,22 +189,19 @@ const cardO = o => `<article class="card">${photo(o.photo, o.nom)}<div class="in
   <p class="muted">${esc(o.age)} ans · ${esc(o.pays)}</p><span class="tag">${esc(o.type)}</span>
   <p style="margin-top:8px"><span class="dot ${o.actif ? 'on' : 'off'}"></span>${o.actif ? 'Actif' : 'Non actif'}</p></div></article>`;
 
-// Exemples affichés tant que le serveur n'est pas relié ou vide
-const demoB = [{nom:'Villa moderne R+1',description:'Gros œuvre et finitions.'},{nom:'Immeuble R+3',description:'Structure béton armé.'},{nom:'Clôture et dalle',description:'Travaux de maçonnerie.'}];
-const demoO = [{nom:'Ousmane S.',age:32,pays:'Sénégal',type:'Maçon',actif:true},{nom:'Moussa D.',age:27,pays:'Sénégal',type:'Manœuvre',actif:true},{nom:'Ibrahima F.',age:35,pays:'Sénégal',type:'Maçon',actif:false}];
 
 async function load(){
-  let B = demoB, O = demoO;
+  let B = [], O = [];
   try {
     const [b, o] = await Promise.all([api('/api/batiments'), api('/api/ouvriers')]);
-    if(b.length) B = b;
-    if(o.length) O = o;
+    B = b; O = o;
   } catch {}
-  $('#homeB').innerHTML = B.slice(0, 5).map(cardB).join('');
-  $('#listB').innerHTML = B.map(cardB).join('');
-  $('#listO').innerHTML = O.map(cardO).join('');
+  const vide = t => `<p class="muted">${t}</p>`;
   const actifs = O.filter(o => o.actif).slice(0, 4);
-  $('#homeO').innerHTML = (actifs.length ? actifs : O.slice(0, 4)).map(cardO).join('');
+  $('#homeB').innerHTML = B.length ? B.slice(0, 5).map(cardB).join('') : vide('Nos réalisations arrivent bientôt.');
+  $('#listB').innerHTML = B.length ? B.map(cardB).join('') : vide('Aucun bâtiment publié pour le moment.');
+  $('#listO').innerHTML = O.length ? O.map(cardO).join('') : vide('Aucun ouvrier pour le moment.');
+  $('#homeO').innerHTML = actifs.length ? actifs.map(cardO).join('') : vide('Aucun ouvrier actif pour le moment.');
 }
 
 // ====== COMPTE ======
@@ -204,8 +217,15 @@ $('#tReg').onclick = () => tab(false);
 
 function showUser(u){
   const on = !!u;
-  $('#guest').hidden = on; $('#user').hidden = !on;
-  if(on){ $('#uName').textContent = u.nom; $('#uInfo').textContent = u.whatsapp + ' · ' + u.email; }
+  document.body.classList.toggle('auth', on);
+  if(on){
+    $('#uName').textContent = u.nom;
+    $('#uInfo').textContent = (u.role === 'admin' ? 'Compte admin · ' : '') + [u.whatsapp, u.email].filter(Boolean).join(' · ');
+    go(location.hash.slice(1) || 'accueil');
+  } else {
+    location.hash = '';
+    scrollTo(0, 0);
+  }
 }
 async function submit(e, path, body){
   e.preventDefault();
@@ -232,8 +252,12 @@ $('#fReg').onsubmit = e => {
 };
 $('#out').onclick = () => { store.set('token', null); showUser(null); };
 
+if(store.get('token')) document.body.classList.add('auth');
 (async () => {
-  if(store.get('token')){ try { showUser((await api('/api/moi')).user); } catch { store.set('token', null); } }
+  if(store.get('token')){
+    try { showUser((await api('/api/moi')).user); }
+    catch(err) { if(err.message !== 'Failed to fetch'){ store.set('token', null); showUser(null); } }
+  }
 })();
 load();
 </script>
