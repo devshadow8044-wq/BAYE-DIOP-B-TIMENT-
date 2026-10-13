@@ -48,6 +48,7 @@ input:focus,.btn:focus-visible,nav a:focus-visible{outline:3px solid var(--jaune
 nav{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:#0c0c0c;border-top:3px solid var(--jaune);padding-bottom:env(safe-area-inset-bottom,0px)}
 nav a{flex:1;height:var(--nav);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#9a9a92;text-decoration:none;font-size:12px;font-weight:600}
 nav a svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+nav a[hidden]{display:none}
 nav a.on{color:var(--jaune)}
 .wa{position:fixed;right:16px;bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px) + 16px);z-index:7;width:56px;height:56px;border-radius:50%;background:#25d366;display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.5)}
 .wa svg{width:30px;height:30px;fill:#fff}
@@ -62,6 +63,19 @@ body:not(.auth) .page{display:none}
 body:not(.auth){padding-bottom:24px}
 #welcome .hero{padding-top:28px}
 .lead{color:#cfcfc8;margin-bottom:6px}
+
+select,textarea{width:100%;padding:12px;border-radius:6px;border:2px solid #3a3a3a;background:var(--gris);color:var(--clair);font:inherit}
+textarea{min-height:80px;resize:vertical}
+.chk{display:flex;gap:8px;align-items:center}.chk input{width:auto}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stats .in{padding:10px;text-align:center}.stats h3{font-size:28px;color:var(--jaune)}
+#aTabs .btn{font-size:16px;padding:10px 4px;margin:0}
+.apanel{display:none}.apanel.on{display:block}
+.row{display:flex;gap:10px;align-items:center;background:var(--gris);border-radius:8px;padding:8px;margin:8px 0}
+.row img,.row .th{width:56px;height:56px;border-radius:6px;object-fit:cover;flex:none;background:#2e2e2e;display:grid;place-items:center;color:var(--jaune);font:800 24px 'Barlow Condensed',sans-serif}
+.row .tx{flex:1;min-width:0}.row .tx b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.sm{border:0;border-radius:5px;padding:6px 10px;font:600 13px Barlow,sans-serif;cursor:pointer;background:#3a3a3a;color:var(--clair)}
+.sm.y{background:var(--jaune);color:var(--noir)}.sm.r{background:var(--rouge);color:#fff}
 </style>
 </head>
 <body>
@@ -101,6 +115,7 @@ body:not(.auth){padding-bottom:24px}
     <button class="btn alt" data-go="ouvriers">Trouver un ouvrier</button>
   </div>
   <div class="tape"></div>
+  <div class="note" id="annonce" hidden></div>
   <h2>Bâtiments récents</h2>
   <div class="rail" id="homeB"></div>
   <h2>Ouvriers actifs</h2>
@@ -128,6 +143,55 @@ body:not(.auth){padding-bottom:24px}
     </div></div>
   </div>
 </section>
+<section class="page" id="admin">
+  <h2>Admin</h2>
+  <div class="stats" id="stats"></div>
+  <p class="msg" id="aMsg" role="status"></p>
+  <div class="tabs" id="aTabs">
+    <button class="btn" data-t="ouvriers">Ouvriers</button>
+    <button class="btn alt" data-t="batiments">Bâtiments</button>
+    <button class="btn alt" data-t="membres">Membres</button>
+    <button class="btn alt" data-t="reglages">Réglages</button>
+  </div>
+
+  <div class="apanel on" id="a-ouvriers">
+    <form id="fO" class="card" novalidate><div class="in">
+      <h3 id="fOt">Ajouter un ouvrier</h3>
+      <label>Photo</label><input type="file" id="oPhoto" accept="image/jpeg,image/png,image/webp">
+      <label>Nom</label><input id="oNom" required>
+      <label>Âge</label><input id="oAge" type="number" min="16" max="80" required>
+      <label>Pays</label><input id="oPays" value="Sénégal" required>
+      <label>Type</label><select id="oType"><option>Maçon</option><option>Manœuvre</option></select>
+      <label class="chk"><input type="checkbox" id="oActif" checked> Actif (voyant vert)</label>
+      <button class="btn" style="margin-top:14px">Enregistrer</button>
+      <button type="button" class="btn alt" id="oCancel" hidden>Annuler</button>
+    </div></form>
+    <div id="aListO"></div>
+  </div>
+
+  <div class="apanel" id="a-batiments">
+    <form id="fB" class="card" novalidate><div class="in">
+      <h3 id="fBt">Ajouter un bâtiment</h3>
+      <label>Photo</label><input type="file" id="bPhoto" accept="image/jpeg,image/png,image/webp">
+      <label>Nom</label><input id="bNom" required>
+      <label>Description</label><textarea id="bDesc" maxlength="400"></textarea>
+      <button class="btn" style="margin-top:14px">Enregistrer</button>
+      <button type="button" class="btn alt" id="bCancel" hidden>Annuler</button>
+    </div></form>
+    <div id="aListB"></div>
+  </div>
+
+  <div class="apanel" id="a-membres"><div id="aListU"></div></div>
+
+  <div class="apanel" id="a-reglages">
+    <form id="fS" class="card" novalidate><div class="in">
+      <h3>Réglages du site</h3>
+      <label>Numéro WhatsApp (bouton de contact)</label><input id="sWa" type="tel" placeholder="221 76 205 69 41">
+      <label>Annonce sur l'Accueil (laisser vide pour la cacher)</label><textarea id="sAnn" maxlength="200"></textarea>
+      <button class="btn" style="margin-top:14px">Enregistrer</button>
+    </div></form>
+  </div>
+</section>
 </main>
 
 <a class="wa" id="wa" target="_blank" rel="noopener" aria-label="Contacter sur WhatsApp">
@@ -138,6 +202,7 @@ body:not(.auth){padding-bottom:24px}
   <a href="#accueil" data-p="accueil" class="on"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></svg>Accueil</a>
   <a href="#batiment" data-p="batiment"><svg viewBox="0 0 24 24"><path d="M4 21V5l8-2v18M12 9h8v12M7 8h2M7 12h2M7 16h2"/></svg>Bâtiment</a>
   <a href="#ouvriers" data-p="ouvriers"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 0 1 16 0M2 16h20v3H2zM12 5v3"/></svg>Ouvriers</a>
+  <a href="#admin" data-p="admin" id="navAdmin" hidden><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>Admin</a>
   <a href="#compte" data-p="compte"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>Compte</a>
 </nav>
 
@@ -151,9 +216,11 @@ const $ = s => document.querySelector(s);
 const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 $('#wa').href = 'https://wa.me/' + WA_NUM + '?text=' + encodeURIComponent('Bonjour BAYE DIOP BÂTIMENT, je vous contacte depuis le site.');
 
+let isAdmin = false;
+
 // ====== NAVIGATION ======
 function go(p){
-  if(!document.getElementById(p)) p = 'accueil';
+  if(!document.getElementById(p) || (p === 'admin' && !isAdmin)) p = 'accueil';
   document.querySelectorAll('.page').forEach(e => e.classList.toggle('on', e.id === p));
   document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.dataset.p === p));
   scrollTo(0, 0);
@@ -171,8 +238,8 @@ async function api(path, opts = {}){
   const token = store.get('token');
   const r = await fetch(API + path, {
     ...opts,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
-    body: opts.body ? JSON.stringify(opts.body) : undefined
+    headers: { ...(opts.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }), ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: !opts.body || opts.body instanceof FormData ? opts.body : JSON.stringify(opts.body)
   });
   const data = await r.json().catch(() => ({}));
   if(!r.ok) throw new Error(data.error || 'Erreur serveur');
@@ -196,6 +263,7 @@ async function load(){
     const [b, o] = await Promise.all([api('/api/batiments'), api('/api/ouvriers')]);
     B = b; O = o;
   } catch {}
+  try { applySettings(await api('/api/settings')); } catch {}
   const vide = t => `<p class="muted">${t}</p>`;
   const actifs = O.filter(o => o.actif).slice(0, 4);
   $('#homeB').innerHTML = B.length ? B.slice(0, 5).map(cardB).join('') : vide('Nos réalisations arrivent bientôt.');
@@ -218,6 +286,9 @@ $('#tReg').onclick = () => tab(false);
 function showUser(u){
   const on = !!u;
   document.body.classList.toggle('auth', on);
+  isAdmin = on && u.role === 'admin';
+  $('#navAdmin').hidden = !isAdmin;
+  if(isAdmin) adminLoad();
   if(on){
     $('#uName').textContent = u.nom;
     $('#uInfo').textContent = (u.role === 'admin' ? 'Compte admin · ' : '') + [u.whatsapp, u.email].filter(Boolean).join(' · ');
@@ -251,6 +322,91 @@ $('#fReg').onsubmit = e => {
   submit(e, '/api/inscription', { nom, whatsapp, email, password });
 };
 $('#out').onclick = () => { store.set('token', null); showUser(null); };
+
+
+// ====== ADMIN ======
+function applySettings(S){
+  const num = String(S.whatsapp || WA_NUM).replace(/\D/g, '');
+  $('#wa').href = 'https://wa.me/' + num + '?text=' + encodeURIComponent('Bonjour BAYE DIOP BÂTIMENT, je vous contacte depuis le site.');
+  const a = $('#annonce'); a.textContent = S.annonce || ''; a.hidden = !S.annonce;
+}
+const aMsg = (t, err) => { const m = $('#aMsg'); m.textContent = t; m.className = 'msg' + (err ? ' err' : ''); };
+function aTab(t){
+  document.querySelectorAll('.apanel').forEach(p => p.classList.toggle('on', p.id === 'a-' + t));
+  document.querySelectorAll('#aTabs button').forEach(b => b.className = 'btn' + (b.dataset.t === t ? '' : ' alt'));
+}
+document.querySelectorAll('#aTabs button').forEach(b => b.onclick = () => aTab(b.dataset.t));
+
+const thumb = (src, nom) => src ? `<img src="${esc(src)}" alt="${esc(nom)}">` : `<div class="th">${esc((nom || '?').slice(0, 1).toUpperCase())}</div>`;
+const rowO = o => `<div class="row">${thumb(o.photo, o.nom)}<div class="tx"><b>${esc(o.nom)}</b><span class="muted">${esc(o.type)} · ${esc(o.age)} ans · ${esc(o.pays)}</span>
+  <div class="acts"><button class="sm y" data-act="tog" data-id="${esc(o.id)}">${o.actif ? '🟢 Actif' : '🔴 Non actif'}</button>
+  <button class="sm" data-act="edO" data-id="${esc(o.id)}">Modifier</button><button class="sm r" data-act="delO" data-id="${esc(o.id)}">Supprimer</button></div></div></div>`;
+const rowB = b => `<div class="row">${thumb(b.photo, b.nom)}<div class="tx"><b>${esc(b.nom)}</b><span class="muted">${esc(b.description)}</span>
+  <div class="acts"><button class="sm" data-act="edB" data-id="${esc(b.id)}">Modifier</button><button class="sm r" data-act="delB" data-id="${esc(b.id)}">Supprimer</button></div></div></div>`;
+const rowU = u => `<div class="row"><div class="th">${esc((u.nom || '?').slice(0, 1).toUpperCase())}</div><div class="tx"><b>${esc(u.nom)}${u.role === 'admin' ? ' (admin)' : ''}</b>
+  <span class="muted">${esc(u.email)}<br>${esc(u.whatsapp)} · ${esc((u.createdAt || '').slice(0, 10))}</span>
+  <div class="acts">${u.whatsapp ? `<a class="sm y" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/${esc(u.whatsapp.replace(/\D/g, ''))}">WhatsApp</a>` : ''}
+  ${u.role === 'admin' ? '' : `<button class="sm r" data-act="delU" data-id="${esc(u.id)}">Supprimer</button>`}</div></div></div>`;
+
+let cache = { O: [], B: [] };
+async function adminLoad(){
+  try {
+    const [st, O, B, U, S] = await Promise.all([api('/api/admin/stats'), api('/api/ouvriers'), api('/api/batiments'), api('/api/admin/users'), api('/api/settings')]);
+    cache = { O, B };
+    $('#stats').innerHTML = [['Membres', st.users], ['Ouvriers', st.ouvriers], ['Actifs', st.actifs], ['Bâtiments', st.batiments]]
+      .map(([k, v]) => `<div class="card"><div class="in"><h3>${esc(v)}</h3><p class="muted">${k}</p></div></div>`).join('');
+    $('#aListO').innerHTML = O.length ? O.map(rowO).join('') : '<p class="muted">Aucun ouvrier pour le moment.</p>';
+    $('#aListB').innerHTML = B.length ? B.map(rowB).join('') : '<p class="muted">Aucun bâtiment pour le moment.</p>';
+    $('#aListU').innerHTML = U.length ? U.map(rowU).join('') : '<p class="muted">Aucun membre.</p>';
+    $('#sWa').value = S.whatsapp || ''; $('#sAnn').value = S.annonce || '';
+  } catch(err) { aMsg(err.message === 'Failed to fetch' ? 'Serveur injoignable.' : err.message, true); }
+}
+// Après un changement : recharge l'admin et le site public
+const refresh = async msg => { aMsg(msg); await Promise.all([adminLoad(), load()]); };
+const run = async (fn, ok) => { aMsg('Veuillez patienter...'); try { await fn(); await refresh(ok); } catch(err) { aMsg(err.message === 'Failed to fetch' ? 'Serveur injoignable.' : err.message, true); } };
+
+function resetO(){ $('#fO').reset(); $('#fO').dataset.edit = ''; $('#fOt').textContent = 'Ajouter un ouvrier'; $('#oCancel').hidden = true; $('#oPays').value = 'Sénégal'; }
+function resetB(){ $('#fB').reset(); $('#fB').dataset.edit = ''; $('#fBt').textContent = 'Ajouter un bâtiment'; $('#bCancel').hidden = true; }
+$('#oCancel').onclick = resetO; $('#bCancel').onclick = resetB;
+
+$('#fO').onsubmit = e => {
+  e.preventDefault();
+  const fd = new FormData(), id = $('#fO').dataset.edit;
+  fd.set('nom', $('#oNom').value.trim()); fd.set('age', $('#oAge').value); fd.set('pays', $('#oPays').value.trim());
+  fd.set('type', $('#oType').value); fd.set('actif', $('#oActif').checked);
+  if($('#oPhoto').files[0]) fd.set('photo', $('#oPhoto').files[0]);
+  run(async () => { await api(id ? '/api/admin/ouvriers/' + id : '/api/admin/ouvriers', { method: id ? 'PATCH' : 'POST', body: fd }); resetO(); }, id ? 'Ouvrier modifié.' : 'Ouvrier ajouté.');
+};
+$('#fB').onsubmit = e => {
+  e.preventDefault();
+  const fd = new FormData(), id = $('#fB').dataset.edit;
+  fd.set('nom', $('#bNom').value.trim()); fd.set('description', $('#bDesc').value.trim());
+  if($('#bPhoto').files[0]) fd.set('photo', $('#bPhoto').files[0]);
+  run(async () => { await api(id ? '/api/admin/batiments/' + id : '/api/admin/batiments', { method: id ? 'PATCH' : 'POST', body: fd }); resetB(); }, id ? 'Bâtiment modifié.' : 'Bâtiment ajouté.');
+};
+$('#fS').onsubmit = e => {
+  e.preventDefault();
+  run(() => api('/api/admin/settings', { method: 'PATCH', body: { whatsapp: $('#sWa').value, annonce: $('#sAnn').value } }), 'Réglages enregistrés.');
+};
+
+$('#admin').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if(!b) return;
+  const id = b.dataset.id, o = cache.O.find(x => x.id === id), bat = cache.B.find(x => x.id === id);
+  switch(b.dataset.act){
+    case 'tog': run(() => api('/api/admin/ouvriers/' + id, { method: 'PATCH', body: { actif: !o.actif } }), 'Statut mis à jour.'); break;
+    case 'edO':
+      $('#fO').dataset.edit = id; $('#fOt').textContent = 'Modifier ' + o.nom; $('#oCancel').hidden = false;
+      $('#oNom').value = o.nom; $('#oAge').value = o.age; $('#oPays').value = o.pays; $('#oType').value = o.type; $('#oActif').checked = o.actif;
+      $('#fO').scrollIntoView({ behavior: 'smooth' }); break;
+    case 'edB':
+      $('#fB').dataset.edit = id; $('#fBt').textContent = 'Modifier ' + bat.nom; $('#bCancel').hidden = false;
+      $('#bNom').value = bat.nom; $('#bDesc').value = bat.description || '';
+      $('#fB').scrollIntoView({ behavior: 'smooth' }); break;
+    case 'delO': if(confirm('Supprimer cet ouvrier ?')) run(() => api('/api/admin/ouvriers/' + id, { method: 'DELETE' }), 'Ouvrier supprimé.'); break;
+    case 'delB': if(confirm('Supprimer ce bâtiment ?')) run(() => api('/api/admin/batiments/' + id, { method: 'DELETE' }), 'Bâtiment supprimé.'); break;
+    case 'delU': if(confirm('Supprimer ce membre ?')) run(() => api('/api/admin/users/' + id, { method: 'DELETE' }), 'Membre supprimé.'); break;
+  }
+});
 
 if(store.get('token')) document.body.classList.add('auth');
 (async () => {
